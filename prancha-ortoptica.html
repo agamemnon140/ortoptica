@@ -1,0 +1,920 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prancha ortóptica — 9 posições do olhar</title>
+<style>
+  :root{
+    --paper:#FBFAF6; --card:#FFFFFF; --ink:#22241F; --muted:#6C7066;
+    --line:#E2E1D7; --line2:#CFCEC2; --accent:#0E6B59; --accent-soft:#E1F1EC;
+    --warn-bg:#FAEEDA; --warn-ink:#7A4A0A; --ok-bg:#E1F1EC; --ok-ink:#0A4A3D;
+    --danger:#A32D2D; --r:10px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font:15px/1.55 "Avenir Next","Segoe UI",system-ui,-apple-system,sans-serif;}
+  header{display:flex;flex-wrap:wrap;align-items:center;gap:14px;
+    padding:16px 22px;border-bottom:1px solid var(--line);background:var(--card);}
+  header h1{font-size:17px;font-weight:600;margin:0;letter-spacing:.2px}
+  header .sub{font-size:12.5px;color:var(--muted)}
+  header .actions{margin-left:auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .chip{font-size:12px;padding:4px 11px;border-radius:999px;background:#EFEEE6;color:var(--muted);white-space:nowrap}
+  .chip.ok{background:var(--ok-bg);color:var(--ok-ink)}
+  .chip.warn{background:var(--warn-bg);color:var(--warn-ink)}
+  button{font:inherit;font-size:13.5px;padding:8px 14px;border-radius:8px;cursor:pointer;
+    border:1px solid var(--line2);background:var(--card);color:var(--ink)}
+  button:hover{border-color:var(--accent);color:var(--accent)}
+  button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.primary:hover{background:#0B5949;color:#fff}
+  button.danger{color:var(--danger)}
+  button.danger:hover{border-color:var(--danger)}
+  label.toggle{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer}
+  #status{min-height:22px;padding:6px 22px;font-size:13px;color:var(--accent)}
+  #status.warn{color:var(--warn-ink)}
+  main{display:grid;grid-template-columns:248px minmax(0,1fr);gap:22px;padding:6px 22px 40px;max-width:1180px;margin:0 auto}
+  @media (max-width:880px){ main{grid-template-columns:1fr} }
+
+  /* Galeria */
+  aside h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:8px 0 6px}
+  .hint{font-size:12.5px;color:var(--muted);margin:0 0 10px}
+  .thumbs{display:grid;gap:10px}
+  .thumb{position:relative;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--card);cursor:grab}
+  .thumb canvas{display:block;width:100%;height:auto}
+  .thumb .tname{position:absolute;left:0;right:0;bottom:0;font-size:10.5px;color:#fff;
+    background:rgba(20,22,18,.55);padding:2px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .thumb .badge{position:absolute;top:6px;right:6px;font-size:10px;padding:2px 8px;border-radius:999px}
+  .thumb .badge.ok{background:var(--ok-bg);color:var(--ok-ink)}
+  .thumb .badge.warn{background:var(--warn-bg);color:var(--warn-ink)}
+  .thumb.armed{outline:3px solid var(--accent);outline-offset:-3px}
+  .drop{border:1.5px dashed var(--line2);border-radius:var(--r);padding:26px 12px;text-align:center;
+    color:var(--muted);font-size:13px;margin-top:10px}
+
+  /* Prancha */
+  .topRow{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;margin-bottom:16px}
+  .cell{position:relative;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--card);cursor:pointer}
+  .cell canvas{display:block;width:100%;height:auto}
+  .cell .lbl{position:absolute;left:8px;bottom:6px;font-size:12px;font-weight:600;color:var(--ink);
+    background:rgba(255,255,255,.88);padding:2px 9px;border-radius:999px;pointer-events:none}
+  .cell .lbl small{font-weight:400;color:var(--muted)}
+  .cell.empty::after{content:"+";position:absolute;inset:0;display:grid;place-items:center;
+    font-size:30px;color:var(--line2);pointer-events:none}
+  .cell.empty{background:#F6F5EE}
+  .cell.sel{outline:3px solid var(--accent);outline-offset:-3px}
+  .cell.swapping{outline:3px dashed var(--accent);outline-offset:-3px}
+  #board.placing .cell{box-shadow:0 0 0 2px var(--accent-soft) inset}
+  .frontal{width:228px;flex:none}
+  .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .legendRow{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:12px}
+  .legend{font-size:12.5px;color:var(--muted);margin:0;flex:1;min-width:260px}
+  .legendRow button{font-size:12px;padding:5px 10px;white-space:nowrap}
+  .thumb.used{opacity:.55}
+
+  /* Medidas */
+  .measures{margin:18px 0 0;border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:14px 16px}
+  .mHead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+  .mHead strong{font-size:14px}
+  .mNote{font-size:12px;color:var(--warn-ink);background:var(--warn-bg);padding:2px 10px;border-radius:999px}
+  .mHead button{padding:4px 10px;font-size:12.5px}
+  .mHead .grow{margin-left:auto}
+  .mGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:9px 24px;margin-top:10px}
+  .mRow{display:flex;align-items:center;gap:8px;font-size:13px}
+  .mRow label{color:var(--muted);flex:1;min-width:0}
+  .mRow input[type=number]{width:62px;padding:5px 6px;border:1px solid var(--line2);border-radius:6px;font:inherit;text-align:right}
+  .mRow input[type=text]{flex:2;padding:5px 8px;border:1px solid var(--line2);border-radius:6px;font:inherit}
+  .mRow select{padding:5px 6px;border:1px solid var(--line2);border-radius:6px;font:inherit;background:#fff}
+  .mUnit{color:var(--muted);font-size:12px;min-width:18px}
+  .mSub{font-size:11.5px;color:var(--muted);margin:10px 0 0}
+  .mLabel{font-size:12.5px;font-weight:600;color:var(--ink);margin:16px 0 8px}
+  .devGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:560px}
+  .devCell{border:1px solid var(--line);border-radius:7px;padding:6px 8px;background:#FCFBF7}
+  .devCell .dl{font-size:11px;color:var(--muted);display:block;margin-bottom:3px}
+  .devCell .dl b{color:var(--ink);font-weight:600}
+  .devCell input{width:100%;padding:4px 6px;border:1px solid var(--line2);border-radius:5px;font:inherit;font-size:12.5px}
+  .devCell.empty{opacity:.5}
+
+  /* Editor */
+  .editor{flex:1;min-width:300px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:14px 16px}
+  .editorEmpty{flex:1;min-width:300px;border:1.5px dashed var(--line2);border-radius:var(--r);
+    padding:24px 16px;color:var(--muted);font-size:13.5px;align-self:stretch;display:grid;place-items:center;text-align:center}
+  .edHead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .edHead strong{font-size:14px}
+  .edHead button{margin-left:auto;padding:4px 10px;font-size:12.5px}
+  #edCanvas{display:block;width:100%;max-width:460px;height:auto;border:1px solid var(--line);
+    border-radius:8px;cursor:grab;touch-action:none;background:#fff}
+  .editor .hint{margin:8px 0 10px}
+  .editor label.range{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);margin:8px 0}
+  .editor input[type=range]{flex:1;accent-color:var(--accent)}
+  .editor .val{min-width:48px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+  .edBtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  details.help{margin:26px 22px 40px;max-width:1136px;font-size:13.5px;color:var(--muted)}
+  details.help summary{cursor:pointer;color:var(--ink);font-weight:600;font-size:13.5px}
+  details.help ol{margin:10px 0 6px;padding-left:20px}
+  details.help li{margin:4px 0}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Prancha ortóptica</h1>
+    <div class="sub">Montagem das 9 posições do olhar · processamento 100% local — as fotos não saem deste dispositivo</div>
+  </div>
+  <div class="actions">
+    <span id="detStatus" class="chip">Carregando detecção de olhos…</span>
+    <label class="toggle"><input type="checkbox" id="lblToggle"> Rótulos na exportação</label>
+    <button id="btnImport" class="primary">Importar fotos</button>
+    <button id="btnDraft">Rascunho automático</button>
+    <button id="btnExport">Exportar prancha (PNG)</button>
+    <input type="file" id="fileInput" accept="image/*" multiple hidden>
+  </div>
+</header>
+
+<div id="status" role="status"></div>
+
+<main>
+  <aside>
+    <h2>Fotos importadas</h2>
+    <p class="hint">Clique numa foto e depois na célula de destino — ou arraste. O recorte é centrado automaticamente nos olhos.</p>
+    <div id="thumbs" class="thumbs"></div>
+    <div id="dropHint" class="drop">Arraste fotos aqui<br>ou use "Importar fotos"<br><small>(JPEG, PNG, WebP ou HEIC do iPhone)</small></div>
+  </aside>
+
+  <section id="board">
+    <div class="topRow">
+      <div class="cell frontal empty" data-slot="frontal">
+        <canvas width="360" height="480"></canvas>
+        <span class="lbl">Frontal (PPO)</span>
+      </div>
+      <div id="editor" class="editor" hidden>
+        <div class="edHead"><strong id="edTitle"></strong><button id="edClose">Fechar</button></div>
+        <canvas id="edCanvas" width="660" height="300"></canvas>
+        <p class="hint">Arraste a imagem para reposicionar · roda do mouse (ou pinça) para zoom</p>
+        <label class="range">Zoom <input type="range" id="edZoom" min="0.3" max="3" step="0.01" value="1"><span class="val" id="edZoomV">100%</span></label>
+        <label class="range">Rotação <input type="range" id="edRot" min="-20" max="20" step="0.5" value="0"><span class="val" id="edRotV">0,0°</span></label>
+        <div class="edBtns">
+          <button id="edReset">Recentralizar</button>
+          <button id="edSwap">Trocar de lugar</button>
+          <button id="edClear" class="danger">Remover da célula</button>
+        </div>
+      </div>
+      <div id="editorEmpty" class="editorEmpty">Clique numa célula preenchida para ajustar zoom, posição e rotação do recorte.</div>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="legendRow">
+      <p class="legend">A = alto · B = baixo · C = centro · E = esquerda · D = direita — posições conforme aparecem na imagem.</p>
+      <button id="btnInvert" title="Use se a sua convenção nomear as colunas pela direção do olhar do paciente">Inverter E↔D</button>
+    </div>
+
+    <div id="measures" class="measures" hidden>
+      <div class="mHead">
+        <strong>Medidas (rascunho)</strong>
+        <span class="mNote">Estimativa fotográfica de triagem — confirme no cover test</span>
+        <button id="mRecalc" class="grow">Recalcular</button>
+        <button id="mCopy">Copiar medidas</button>
+      </div>
+      <div class="mGrid">
+        <div class="mRow"><label>Fenda palpebral OD</label><input type="number" step="0.1" id="r_fisR"><span class="mUnit">mm</span></div>
+        <div class="mRow"><label>Fenda palpebral OE</label><input type="number" step="0.1" id="r_fisL"><span class="mUnit">mm</span></div>
+        <div class="mRow"><label>DMR-1 OD</label><input type="number" step="0.1" id="r_mrdR"><span class="mUnit">mm</span></div>
+        <div class="mRow"><label>DMR-1 OE</label><input type="number" step="0.1" id="r_mrdL"><span class="mUnit">mm</span></div>
+        <div class="mRow"><label>Olho mais alto (vertical)</label>
+          <select id="r_vDir"><option value="">—</option><option value="OD">OD</option><option value="OE">OE</option></select>
+          <input type="number" step="1" id="r_vPd"><span class="mUnit">Δ</span></div>
+        <div class="mRow"><label>Horizontal em PPO</label>
+          <select id="r_hDir"><option value="">—</option><option value="XT">Exo</option><option value="ET">Eso</option></select>
+          <input type="number" step="1" id="r_hPd"><span class="mUnit">Δ</span></div>
+      </div>
+
+      <p class="mLabel">Mapa de desvios — 9 posições (estimativa)</p>
+      <div class="devGrid" id="devGrid"></div>
+
+      <div class="mRow" style="margin-top:12px"><label style="flex:none">Observações</label><input type="text" id="r_obs" placeholder="ptose, nistagmo, fixação…"></div>
+      <p class="mSub">Medidas calculadas na foto em posição primária (frontal/centro). Escala calibrada pelo diâmetro da íris (~11,7 mm); fator Δ/mm aproximado (Hirschberg). O mapa de 9 posições mede o desvio entre os olhos em cada foto — o componente vertical é mais confiável que o horizontal (ângulo kappa) e as posições extremas são mais ruidosas. Tudo é triagem fotográfica, a confirmar no exame.</p>
+    </div>
+  </section>
+</main>
+
+<details class="help">
+  <summary>Como usar · privacidade</summary>
+  <ol>
+    <li>Importe as fotos da sessão (botão ou arrastando para a galeria).</li>
+    <li>O app detecta os olhos e recorta cada foto numa faixa alinhada e em escala uniforme (referência: distância entre os cantos externos das pálpebras).</li>
+    <li>Clique em "Rascunho automático": o app estima a direção do olhar de cada foto, propõe a montagem das 9 posições e reserva a foto mais aberta para a frontal. É sempre uma sugestão — em paresias os olhos não se movem juntos, então confira cada célula.</li>
+    <li>Ajuste: clique numa foto e depois na célula (ou arraste) para trocar; arraste uma célula sobre outra para permutá-las; "Inverter E↔D" troca as colunas se a sua convenção for pela direção do olhar do paciente.</li>
+    <li>Clique numa célula preenchida para ajuste fino de zoom, posição e rotação. Ao final, exporte a prancha em PNG.</li>
+    <li>O rascunho também estima medidas na foto em posição primária (fenda palpebral e DMR-1 de cada olho, assimetria vertical e uma estimativa horizontal). São estimativas fotográficas de triagem — todas editáveis, para servir de ponto de partida ao laudo, nunca substituindo o cover test.</li>
+  </ol>
+  Tudo é processado neste navegador: nenhuma imagem é enviada a servidores e nada fica salvo ao fechar a página. A exportação em PNG não carrega metadados (EXIF/GPS) das fotos originais. Na primeira utilização é preciso internet apenas para baixar o modelo de detecção; se ele não carregar, o app continua funcionando em modo manual.
+</details>
+
+<script type="module">
+const SLOTS = ["AE","AC","AD","E","C","D","BE","BC","BD"];
+const ARROWS = {AE:"\u2196",AC:"\u2191",AD:"\u2197",E:"\u2190",C:"\u2022",D:"\u2192",BE:"\u2199",BC:"\u2193",BD:"\u2198"};
+const FULL = {AE:"alto · esquerda",AC:"alto · centro",AD:"alto · direita",
+  E:"esquerda",C:"posição primária",D:"direita",
+  BE:"baixo · esquerda",BC:"baixo · centro",BD:"baixo · direita"};
+
+const photos = new Map();
+let nextId = 1;
+const grid = {frontal:null};
+SLOTS.forEach(s => grid[s] = null);
+let armed = null, selected = null, swapFrom = null;
+
+const $ = id => document.getElementById(id);
+const thumbsEl=$("thumbs"), gridEl=$("grid"), statusEl=$("status"), detChip=$("detStatus"),
+  dropHint=$("dropHint"), editor=$("editor"), editorEmpty=$("editorEmpty"),
+  edTitle=$("edTitle"), edCanvas=$("edCanvas"), edZoom=$("edZoom"), edRot=$("edRot"),
+  edZoomV=$("edZoomV"), edRotV=$("edRotV"), boardEl=$("board"), lblToggle=$("lblToggle");
+const edCtx = edCanvas.getContext("2d");
+
+let statusTimer = null;
+function setStatus(msg, opts={}){
+  statusEl.textContent = msg;
+  statusEl.className = opts.warn ? "warn" : "";
+  clearTimeout(statusTimer);
+  if(!opts.sticky) statusTimer = setTimeout(()=>{ statusEl.textContent=""; }, 7000);
+}
+
+/* ---------- Detecção de olhos (MediaPipe, local via WASM) ---------- */
+let landmarker = null;
+const MP = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+const modelPromise = (async()=>{
+  try{
+    const {FaceLandmarker, FilesetResolver} = await import(MP);
+    const fileset = await FilesetResolver.forVisionTasks(MP + "/wasm");
+    const opts = d => ({
+      baseOptions:{
+        modelAssetPath:"https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+        delegate:d },
+      runningMode:"IMAGE", numFaces:1 });
+    try{ landmarker = await FaceLandmarker.createFromOptions(fileset, opts("GPU")); }
+    catch(e){ landmarker = await FaceLandmarker.createFromOptions(fileset, opts("CPU")); }
+    detChip.textContent = "Detecção de olhos pronta";
+    detChip.className = "chip ok";
+  }catch(e){
+    console.warn("Detecção indisponível:", e);
+    detChip.textContent = "Detecção indisponível — modo manual";
+    detChip.className = "chip warn";
+  }
+})();
+
+// Cantos externos das pálpebras (FaceMesh): 33 = olho direito do paciente, 263 = olho esquerdo
+function computeDet(lms, w, h){
+  const P = i => ({x:lms[i].x*w, y:lms[i].y*h});
+  const r = P(33), l = P(263);
+  return {
+    cx:(r.x+l.x)/2, cy:(r.y+l.y)/2,
+    angle:Math.atan2(l.y-r.y, l.x-r.x),
+    icd:Math.hypot(l.x-r.x, l.y-r.y)
+  };
+}
+
+// Direção do olhar: posição da íris (468/473) em relação ao centro da fenda
+// palpebral, projetada no eixo intercantal (invariante à inclinação da cabeça).
+// gx > 0 = íris para a direita da imagem; gy > 0 = íris para baixo.
+function computeGaze(lms, w, h, det){
+  if(!lms || lms.length < 478) return null;
+  const P = i => ({x:lms[i].x*w, y:lms[i].y*h});
+  const ux = Math.cos(det.angle), uy = Math.sin(det.angle);
+  const vx = -uy, vy = ux;
+  function eye(outer, inner, iris){
+    const a = P(outer), b = P(inner), c = P(iris);
+    const mx = (a.x+b.x)/2, my = (a.y+b.y)/2;
+    const ew = Math.hypot(b.x-a.x, b.y-a.y) || 1;
+    const dx = c.x-mx, dy = c.y-my;
+    return {h:(dx*ux+dy*uy)/ew, v:(dx*vx+dy*vy)/ew};
+  }
+  const R = eye(33, 133, 468), L = eye(263, 362, 473);
+  return {gx:(R.h+L.h)/2, gy:(R.v+L.v)/2};
+}
+
+// Medidas geométricas na posição primária. Escala via diâmetro da íris (~11,7 mm).
+const IRIS_MM = 11.7;     // diâmetro horizontal médio da íris (branco-a-branco)
+const MM_TO_PD = 15;      // fator Hirschberg-aproximado (Δ por mm) — só triagem
+function measure(lms, w, h, det){
+  if(!lms || lms.length < 478) return null;
+  const P = i => ({x:lms[i].x*w, y:lms[i].y*h});
+  const u = [Math.cos(det.angle), Math.sin(det.angle)];   // eixo intercantal → direita da imagem
+  const v = [-u[1], u[0]];                                 // perpendicular → baixo da imagem
+  const proj = (p, a, b) => (p.x-a.x)*b[0] + (p.y-a.y)*b[1];
+  const irisDiam = (c, ring) => {
+    const C = P(c); let s = 0;
+    ring.forEach(i => { const Q = P(i); s += Math.hypot(Q.x-C.x, Q.y-C.y); });
+    return 2*s/ring.length;
+  };
+  const dR = irisDiam(468, [469,470,471,472]);
+  const dL = irisDiam(473, [474,475,476,477]);
+  if(!(dR > 1) || !(dL > 1)) return null;
+  const mmR = IRIS_MM/dR, mmL = IRIS_MM/dL, mmAvg = (mmR+mmL)/2;
+  const dist = (a,b) => { const A=P(a), B=P(b); return Math.hypot(A.x-B.x, A.y-B.y); };
+  const fisR = dist(159,145)*mmR, fisL = dist(386,374)*mmL;
+  const irisR = P(468), irisL = P(473);
+  const mrdR = proj(irisR, P(159), v)*mmR;
+  const mrdL = proj(irisL, P(386), v)*mmL;
+  const MR = {x:(P(33).x+P(133).x)/2, y:(P(33).y+P(133).y)/2};
+  const ML = {x:(P(263).x+P(362).x)/2, y:(P(263).y+P(362).y)/2};
+  const dV = (proj(irisR, MR, v) - proj(irisL, ML, v)) * mmAvg;  // <0 ⇒ OD mais alto
+  const dH = (proj(irisR, MR, u) - proj(irisL, ML, u)) * mmAvg;  // <0 ⇒ tendência exo
+  return {fisR, fisL, mrdR, mrdL, dV, dH};
+}
+
+/* ---------- Importação ---------- */
+async function loadResized(file){
+  let blob = file;
+  // HEIC/HEIF: Safari decodifica nativamente; em outros casos, converte sob demanda.
+  if(/\.(heic|heif)$/i.test(file.name) || /heic|heif/.test(file.type)){
+    blob = await maybeConvertHeic(file);
+  }
+  const url = URL.createObjectURL(blob);
+  try{
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const max = 1800, r = Math.min(1, max/Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(img.naturalWidth*r));
+    c.height = Math.max(1, Math.round(img.naturalHeight*r));
+    const cx = c.getContext("2d");
+    cx.imageSmoothingQuality = "high";
+    cx.drawImage(img, 0, 0, c.width, c.height);
+    return c;
+  } finally { URL.revokeObjectURL(url); }
+}
+
+// Tenta decodificar HEIC nativamente; se falhar, usa heic2any (carregado sob demanda).
+let heicLibPromise = null;
+async function maybeConvertHeic(file){
+  try{
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.src = url;
+    await img.decode();              // Safari: sucesso → usa o arquivo original
+    URL.revokeObjectURL(url);
+    return file;
+  }catch(_){ /* navegador não decodifica HEIC → converte */ }
+  if(!heicLibPromise){
+    heicLibPromise = import("https://cdn.jsdelivr.net/npm/heic2any@0.0.4/+esm")
+      .then(m => m.default || m).catch(() => null);
+  }
+  const heic2any = await heicLibPromise;
+  if(!heic2any) throw new Error("HEIC sem suporte e conversor indisponível (sem internet).");
+  const out = await heic2any({blob:file, toType:"image/jpeg", quality:0.92});
+  return Array.isArray(out) ? out[0] : out;
+}
+
+async function handleFiles(list){
+  const isImg = f => f.type.startsWith("image/") || /\.(jpe?g|png|webp|heic|heif|gif|bmp|tiff?)$/i.test(f.name);
+  const files = [...list].filter(isImg);
+  if(!files.length){ setStatus("Nenhuma imagem reconhecida.", {warn:true}); return; }
+  files.sort((a,b) => a.lastModified - b.lastModified);
+  setStatus(`Importando ${files.length} foto(s)…`, {sticky:true});
+  let heicFail = false;
+  for(const f of files){
+    try{ await addPhoto(f); }
+    catch(e){
+      console.warn(e);
+      if(/\.(heic|heif)$/i.test(f.name)){ heicFail = true; }
+      else setStatus(`Não consegui abrir "${f.name}".`, {warn:true});
+    }
+  }
+  renderAll();
+  if(heicFail){
+    setStatus('Algumas fotos HEIC não abriram neste navegador. No iPhone, use o Safari (que converte automaticamente) ou ajuste a câmera para "Mais compatível" (Ajustes › Câmera › Formatos › Mais compatível).', {warn:true, sticky:true});
+  } else {
+    setStatus('Fotos importadas. Clique em "Rascunho automático" para uma proposta inicial, ou monte manualmente.');
+  }
+}
+
+async function addPhoto(file){
+  const cnv = await loadResized(file);
+  const p = {
+    id: nextId++, name: file.name, bmp: cnv, w: cnv.width, h: cnv.height,
+    det: {cx:cnv.width/2, cy:cnv.height*0.42, angle:0, icd:cnv.width/3.2}, auto:false,
+    t:  {zoom:1, panX:0, panY:0, rot:0},   // recorte em faixa (células)
+    tf: {zoom:1, panX:0, panY:0, rot:0}    // recorte frontal (PPO)
+  };
+  photos.set(p.id, p);
+  addThumb(p);
+  detJobs.push(detectFor(p));
+}
+
+const detJobs = [];
+async function detectFor(p){
+  await modelPromise;
+  if(!landmarker){ renderAll(); return; }
+  try{
+    const res = landmarker.detect(p.bmp);
+    const lms = res.faceLandmarks && res.faceLandmarks[0];
+    if(lms){
+      p.det = computeDet(lms, p.w, p.h);
+      p.gaze = computeGaze(lms, p.w, p.h, p.det);
+      p.met = measure(lms, p.w, p.h, p.det);
+      p.faceFrac = p.det.icd / p.w;
+      p.auto = true;
+    }
+  }catch(e){ console.warn("Falha na detecção de", p.name, e); }
+  renderAll();
+}
+
+/* ---------- Desenho do recorte ---------- */
+function drawCrop(ctx, p, dw, dh, frontal){
+  const t = frontal ? p.tf : p.t;
+  const baseW = frontal ? p.det.icd*4.4 : p.det.icd*2.3;
+  const s = dw/baseW * t.zoom;
+  const cy = p.det.cy + (frontal ? p.det.icd*0.95 : -p.det.icd*0.05);
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, dw, dh);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.translate(dw/2 + t.panX*dw, dh/2 + t.panY*dw);
+  ctx.scale(s, s);
+  ctx.rotate(-p.det.angle + t.rot*Math.PI/180);
+  ctx.translate(-p.det.cx, -cy);
+  ctx.drawImage(p.bmp, 0, 0);
+  ctx.restore();
+}
+
+/* ---------- Galeria ---------- */
+function addThumb(p){
+  const d = document.createElement("div");
+  d.className = "thumb";
+  d.dataset.id = p.id;
+  d.draggable = true;
+  d.innerHTML = `<canvas width="300" height="136"></canvas><span class="tname"></span><span class="badge"></span>`;
+  d.querySelector(".tname").textContent = p.name;
+  thumbsEl.appendChild(d);
+}
+
+thumbsEl.addEventListener("click", e => {
+  const th = e.target.closest(".thumb");
+  if(!th) return;
+  const id = Number(th.dataset.id);
+  if(armed === id){ armed = null; setStatus("Seleção cancelada."); }
+  else {
+    armed = id; swapFrom = null;
+    setStatus("Agora clique na célula onde esta foto deve entrar.", {sticky:true});
+  }
+  updateModes();
+  renderAll();
+});
+thumbsEl.addEventListener("dragstart", e => {
+  const th = e.target.closest(".thumb");
+  if(th) e.dataTransfer.setData("text/plain", "p:" + th.dataset.id);
+});
+
+/* ---------- Grade ---------- */
+for(const s of SLOTS){
+  const d = document.createElement("div");
+  d.className = "cell strip empty";
+  d.dataset.slot = s;
+  d.innerHTML = `<canvas width="560" height="255"></canvas>
+    <span class="lbl">${ARROWS[s]} ${s} <small>${FULL[s]}</small></span>`;
+  gridEl.appendChild(d);
+}
+const cells = {};
+document.querySelectorAll(".cell").forEach(el => { cells[el.dataset.slot] = el; });
+
+function onCellClick(slot){
+  if(armed != null){
+    grid[slot] = armed;
+    armed = null;
+    updateModes();
+    setStatus(`Foto colocada em ${slot === "frontal" ? "Frontal (PPO)" : slot}.`);
+    select(slot);
+    return;
+  }
+  if(swapFrom){
+    if(swapFrom !== slot){
+      const tmp = grid[swapFrom]; grid[swapFrom] = grid[slot]; grid[slot] = tmp;
+      setStatus("Células trocadas.");
+    }
+    swapFrom = null;
+    updateModes();
+    select(slot);
+    return;
+  }
+  if(grid[slot]) select(slot);
+  else{
+    selected = null;
+    editor.hidden = true; editorEmpty.hidden = false;
+    setStatus("Célula vazia — selecione uma foto na galeria e clique aqui para colocá-la.");
+    renderAll();
+  }
+}
+
+document.querySelectorAll(".cell").forEach(el => {
+  const slot = el.dataset.slot;
+  el.draggable = true;
+  el.addEventListener("click", () => onCellClick(slot));
+  el.addEventListener("dragstart", e => {
+    if(grid[slot]) e.dataTransfer.setData("text/plain", "c:" + slot);
+    else e.preventDefault();
+  });
+  el.addEventListener("dragover", e => e.preventDefault());
+  el.addEventListener("drop", e => {
+    e.preventDefault();
+    e.stopPropagation();
+    const d = e.dataTransfer.getData("text/plain");
+    if(d.startsWith("p:")){
+      grid[slot] = Number(d.slice(2));
+      armed = null; updateModes(); select(slot);
+    } else if(d.startsWith("c:")){
+      const from = d.slice(2);
+      if(from !== slot){
+        const tmp = grid[from]; grid[from] = grid[slot]; grid[slot] = tmp;
+        select(slot);
+      }
+    } else if(e.dataTransfer.files && e.dataTransfer.files.length){
+      handleFiles(e.dataTransfer.files);
+    }
+    renderAll();
+  });
+});
+
+function updateModes(){
+  boardEl.classList.toggle("placing", armed != null || !!swapFrom);
+}
+
+/* ---------- Editor ---------- */
+function activeT(){
+  if(!selected || !grid[selected]) return null;
+  const p = photos.get(grid[selected]);
+  if(!p) return null;
+  return selected === "frontal" ? p.tf : p.t;
+}
+function syncSliders(t){
+  edZoom.value = t.zoom; edRot.value = t.rot;
+  edZoomV.textContent = Math.round(t.zoom*100) + "%";
+  edRotV.textContent = t.rot.toFixed(1).replace(".", ",") + "\u00B0";
+}
+function select(slot){
+  selected = slot;
+  const pid = grid[slot];
+  if(!pid){ editor.hidden = true; editorEmpty.hidden = false; renderAll(); return; }
+  const frontal = slot === "frontal";
+  edCanvas.width = frontal ? 390 : 660;
+  edCanvas.height = frontal ? 520 : 300;
+  edTitle.textContent = frontal ? "Frontal (PPO)" : `Célula ${slot} · ${FULL[slot]}`;
+  syncSliders(activeT());
+  editor.hidden = false; editorEmpty.hidden = true;
+  renderAll();
+}
+function closeEditor(){
+  selected = null;
+  editor.hidden = true; editorEmpty.hidden = false;
+  renderAll();
+}
+$("edClose").addEventListener("click", closeEditor);
+$("edReset").addEventListener("click", () => {
+  const t = activeT(); if(!t) return;
+  Object.assign(t, {zoom:1, panX:0, panY:0, rot:0});
+  syncSliders(t); renderAll();
+  setStatus("Recorte automático restaurado.");
+});
+$("edClear").addEventListener("click", () => {
+  if(!selected) return;
+  grid[selected] = null;
+  closeEditor();
+  setStatus("Foto removida da célula (continua na galeria).");
+});
+$("edSwap").addEventListener("click", () => {
+  if(!selected) return;
+  swapFrom = selected;
+  updateModes(); renderAll();
+  setStatus("Agora clique na célula com a qual deseja trocar.", {sticky:true});
+});
+edZoom.addEventListener("input", () => {
+  const t = activeT(); if(!t) return;
+  t.zoom = Number(edZoom.value); syncSliders(t); renderAll();
+});
+edRot.addEventListener("input", () => {
+  const t = activeT(); if(!t) return;
+  t.rot = Number(edRot.value); syncSliders(t); renderAll();
+});
+
+let dragging = false, lx = 0, ly = 0;
+edCanvas.addEventListener("pointerdown", e => {
+  dragging = true; lx = e.clientX; ly = e.clientY;
+  edCanvas.setPointerCapture(e.pointerId);
+});
+edCanvas.addEventListener("pointermove", e => {
+  if(!dragging) return;
+  const t = activeT(); if(!t) return;
+  const r = edCanvas.getBoundingClientRect();
+  const f = edCanvas.width / r.width;
+  t.panX += (e.clientX - lx)*f/edCanvas.width;
+  t.panY += (e.clientY - ly)*f/edCanvas.width;
+  lx = e.clientX; ly = e.clientY;
+  renderAll();
+});
+["pointerup","pointercancel"].forEach(ev => edCanvas.addEventListener(ev, () => { dragging = false; }));
+edCanvas.addEventListener("wheel", e => {
+  e.preventDefault();
+  const t = activeT(); if(!t) return;
+  t.zoom = Math.min(3, Math.max(0.3, t.zoom * (e.deltaY < 0 ? 1.06 : 1/1.06)));
+  syncSliders(t); renderAll();
+}, {passive:false});
+
+/* ---------- Render geral ---------- */
+function renderAll(){
+  thumbsEl.querySelectorAll(".thumb").forEach(th => {
+    const p = photos.get(Number(th.dataset.id));
+    if(!p) return;
+    const cv = th.querySelector("canvas");
+    drawCrop(cv.getContext("2d"), p, cv.width, cv.height, false);
+    const b = th.querySelector(".badge");
+    b.textContent = p.auto ? "olhos detectados" : "manual";
+    b.className = "badge " + (p.auto ? "ok" : "warn");
+    th.classList.toggle("armed", armed === p.id);
+    th.classList.toggle("used", Object.values(grid).includes(p.id));
+  });
+  for(const slot of Object.keys(cells)){
+    const el = cells[slot], pid = grid[slot];
+    const cv = el.querySelector("canvas"), ctx = cv.getContext("2d");
+    if(pid && photos.has(pid)){
+      el.classList.remove("empty");
+      drawCrop(ctx, photos.get(pid), cv.width, cv.height, slot === "frontal");
+    } else {
+      el.classList.add("empty");
+      ctx.clearRect(0, 0, cv.width, cv.height);
+    }
+    el.classList.toggle("sel", selected === slot);
+    el.classList.toggle("swapping", swapFrom === slot);
+  }
+  if(!editor.hidden){
+    const pid = selected && grid[selected];
+    if(pid && photos.has(pid)) drawCrop(edCtx, photos.get(pid), edCanvas.width, edCanvas.height, selected === "frontal");
+    else closeEditor();
+  }
+  dropHint.hidden = photos.size > 0;
+}
+
+/* ---------- Exportação ---------- */
+function drawSlotTo(ctx, slot, x, y, w, h){
+  const pid = grid[slot];
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.clip();
+  if(pid && photos.has(pid)) drawCrop(ctx, photos.get(pid), w, h, slot === "frontal");
+  else { ctx.fillStyle = "#F4F4EF"; ctx.fillRect(0, 0, w, h); }
+  ctx.restore();
+  ctx.strokeStyle = "#D8D8D0"; ctx.lineWidth = 1;
+  ctx.strokeRect(x+0.5, y+0.5, w-1, h-1);
+}
+
+function exportBoard(){
+  if(!Object.values(grid).some(v => v)){
+    setStatus("A prancha está vazia — coloque pelo menos uma foto antes de exportar.", {warn:true});
+    return;
+  }
+  const withLbl = lblToggle.checked;
+  const cw = 560, ch = 255, gap = 18, m = 48;
+  const fw = 450, fh = 600;
+  const lblH = withLbl ? 32 : 0;
+  const rowH = ch + lblH;
+  const gridW = cw*3 + gap*2;
+  const W = m*2 + gridW;
+  const gridY = m + fh + 36;
+  const legendH = withLbl ? 44 : 0;
+  const H = gridY + rowH*3 + gap*2 + legendH + m;
+
+  const c = document.createElement("canvas");
+  c.width = W; c.height = H;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
+
+  drawSlotTo(ctx, "frontal", m, m, fw, fh);
+  if(withLbl){
+    ctx.fillStyle = "#22241F";
+    ctx.font = "500 30px system-ui, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText("Prancha ortóptica — 9 posições do olhar", m + fw + 28, m + 40);
+    ctx.fillStyle = "#6C7066";
+    ctx.font = "400 22px system-ui, sans-serif";
+    const d = new Date();
+    const ds = `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+    ctx.fillText(ds, m + fw + 28, m + 76);
+  }
+
+  SLOTS.forEach((s, i) => {
+    const col = i % 3, row = Math.floor(i/3);
+    const x = m + col*(cw + gap);
+    const y = gridY + row*(rowH + gap);
+    drawSlotTo(ctx, s, x, y, cw, ch);
+    if(withLbl){
+      ctx.fillStyle = "#5F5E5A";
+      ctx.font = "500 21px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(`${s} — ${FULL[s].replaceAll(" \u00B7 ", "/")}`, x + cw/2, y + ch + 24);
+    }
+  });
+
+  if(withLbl){
+    ctx.fillStyle = "#8A8D84";
+    ctx.font = "400 19px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("A = alto · B = baixo · C = centro · E = esquerda · D = direita (direção do olhar do paciente)", W/2, H - m + 12);
+  }
+
+  const d = new Date();
+  const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  c.toBlob(b => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(b);
+    a.download = `prancha_${ds}.png`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 8000);
+    setStatus("Prancha exportada (PNG, sem metadados das fotos originais).");
+  }, "image/png");
+}
+
+/* ---------- Rascunho automático ---------- */
+async function draftAssign(){
+  if(!photos.size){
+    setStatus("Importe as fotos da sessão primeiro.", {warn:true});
+    return;
+  }
+  setStatus("Analisando a direção do olhar nas fotos…", {sticky:true});
+  await modelPromise;
+  await Promise.all(detJobs);
+
+  const all = [...photos.values()].filter(p => p.auto && p.gaze);
+  if(!all.length){
+    setStatus("Nenhuma foto com olhos detectados — monte manualmente arrastando da galeria.", {warn:true});
+    return;
+  }
+  if(Object.values(grid).some(v => v) &&
+     !confirm("Substituir a montagem atual pelo rascunho automático?")){
+    setStatus("Rascunho cancelado — montagem atual mantida.");
+    return;
+  }
+
+  // Frontal (PPO): a foto claramente mais aberta (rosto menor no quadro)
+  let pool = [...all];
+  let frontal = null;
+  if(pool.length > 1){
+    const fracs = pool.map(p => p.faceFrac).sort((a,b) => a-b);
+    const median = fracs[Math.floor(fracs.length/2)];
+    const cand = pool.reduce((m,p) => p.faceFrac < m.faceFrac ? p : m, pool[0]);
+    if(cand.faceFrac < median*0.82) frontal = cand;
+  }
+  if(frontal) pool = pool.filter(p => p !== frontal);
+
+  // Normalização relativa entre as fotos da sessão: essencial em estrabismo,
+  // onde a posição absoluta das íris carrega o desvio de base.
+  const xs = pool.map(p => p.gaze.gx), ys = pool.map(p => p.gaze.gy);
+  const nrm = (v, arr) => {
+    const mn = Math.min(...arr), mx = Math.max(...arr);
+    return (mx-mn) < 1e-6 ? 0 : ((v-mn)/(mx-mn))*2 - 1;
+  };
+  const pts = pool.map(p => ({p, x:nrm(p.gaze.gx, xs), y:nrm(p.gaze.gy, ys)}));
+  const targets = {AE:[-1,-1], AC:[0,-1], AD:[1,-1],
+                   E:[-1,0],  C:[0,0],  D:[1,0],
+                   BE:[-1,1], BC:[0,1], BD:[1,1]};
+
+  // Atribuição gulosa pelo menor custo (distância ao alvo de cada célula)
+  const pairs = [];
+  pts.forEach((pt, i) => {
+    for(const [s, t] of Object.entries(targets))
+      pairs.push({i, s, c:(pt.x-t[0])**2 + (pt.y-t[1])**2});
+  });
+  pairs.sort((a,b) => a.c - b.c);
+  const usedP = new Set(), usedS = new Set(), assign = {};
+  for(const pr of pairs){
+    if(usedP.has(pr.i) || usedS.has(pr.s)) continue;
+    assign[pr.s] = pts[pr.i].p.id;
+    usedP.add(pr.i); usedS.add(pr.s);
+    if(usedS.size === 9 || usedP.size === pts.length) break;
+  }
+
+  SLOTS.forEach(s => { grid[s] = assign[s] ?? null; });
+  grid.frontal = frontal ? frontal.id : null;
+  selected = null; armed = null; swapFrom = null;
+  editor.hidden = true; editorEmpty.hidden = false;
+  updateModes(); renderAll();
+
+  let mMsg = "";
+  if(computeReport()){ fillReportUI(); $("measures").hidden = false; mMsg = " Medidas estimadas no painel abaixo (editáveis)."; }
+  setStatus(`Rascunho montado: ${usedS.size} de 9 células${frontal ? " + frontal" : ""}. É uma sugestão — confira cada posição.${mMsg}`, {sticky:true});
+}
+
+function invertColumns(){
+  [["AE","AD"],["E","D"],["BE","BD"]].forEach(([a,b]) => {
+    const t = grid[a]; grid[a] = grid[b]; grid[b] = t;
+  });
+  renderAll();
+  setStatus("Colunas E e D invertidas.");
+}
+
+/* ---------- Medidas do relatório (editáveis) ---------- */
+const report = {fisR:"",fisL:"",mrdR:"",mrdL:"",vDir:"",vPd:"",hDir:"",hPd:"",obs:""};
+const RIDS = ["fisR","fisL","mrdR","mrdL","vDir","vPd","hDir","hPd","obs"];
+RIDS.forEach(k => $("r_"+k).addEventListener("input", e => { report[k] = e.target.value; }));
+function fillReportUI(){ RIDS.forEach(k => { $("r_"+k).value = report[k]; }); fillDevUI(); }
+
+// Mapa de desvios por posição (texto editável por célula)
+const devCells = {};
+SLOTS.forEach(s => { devCells[s] = ""; });
+const devGridEl = $("devGrid");
+SLOTS.forEach(s => {
+  const d = document.createElement("div");
+  d.className = "devCell";
+  d.dataset.slot = s;
+  d.innerHTML = `<span class="dl">${ARROWS[s]} <b>${s}</b></span><input type="text" id="rc_${s}" placeholder="—">`;
+  devGridEl.appendChild(d);
+  d.querySelector("input").addEventListener("input", e => { devCells[s] = e.target.value; });
+});
+function fillDevUI(){
+  SLOTS.forEach(s => {
+    $("rc_"+s).value = devCells[s];
+    devGridEl.querySelector(`[data-slot="${s}"]`).classList.toggle("empty", !grid[s]);
+  });
+}
+function fmtDev(m){
+  if(!m) return "";
+  const h = Math.round(Math.abs(m.dH)*MM_TO_PD);
+  const v = Math.round(Math.abs(m.dV)*MM_TO_PD);
+  const parts = [];
+  if(h >= 6) parts.push((m.dH < 0 ? "Exo" : "Eso") + h + "Δ");
+  if(v >= 4) parts.push((m.dV < 0 ? "OD↑" : "OE↑") + v + "Δ");
+  return parts.join(" ") || "~0";
+}
+
+function pptPhoto(){
+  return photos.get(grid.frontal) || photos.get(grid.C) ||
+         [...photos.values()].find(p => p.auto && p.met) || null;
+}
+function computeReport(){
+  const p = pptPhoto();
+  if(!p || !p.met) return false;
+  const m = p.met, r1 = x => (Math.round(x*10)/10);
+  report.fisR = r1(m.fisR); report.fisL = r1(m.fisL);
+  report.mrdR = r1(m.mrdR); report.mrdL = r1(m.mrdL);
+  if(Math.abs(m.dV) > 0.3){ report.vDir = m.dV < 0 ? "OD" : "OE"; report.vPd = Math.round(Math.abs(m.dV)*MM_TO_PD); }
+  else { report.vDir = ""; report.vPd = ""; }
+  if(Math.abs(m.dH) > 0.5){ report.hDir = m.dH < 0 ? "XT" : "ET"; report.hPd = Math.round(Math.abs(m.dH)*MM_TO_PD); }
+  else { report.hDir = ""; report.hPd = ""; }
+  SLOTS.forEach(s => {
+    const cp = photos.get(grid[s]);
+    devCells[s] = cp && cp.met ? fmtDev(cp.met) : "";
+  });
+  return true;
+}
+function copyMeasures(){
+  const L = [];
+  const add = (lbl,v,u) => { if(v !== "" && v != null) L.push(`${lbl}: ${v}${u}`); };
+  add("Fenda palpebral OD", report.fisR, " mm");
+  add("Fenda palpebral OE", report.fisL, " mm");
+  add("DMR-1 OD", report.mrdR, " mm");
+  add("DMR-1 OE", report.mrdL, " mm");
+  if(report.vDir && report.vPd) L.push(`Hipertropia ${report.vDir} ~${report.vPd}Δ`);
+  if(report.hDir && report.hPd) L.push(`${report.hDir === "XT" ? "Exotropia" : "Esotropia"} em PPO ~${report.hPd}Δ`);
+  const dv = SLOTS.filter(s => devCells[s] && devCells[s] !== "~0");
+  if(dv.length){
+    L.push("Desvios por posição (estimativa):");
+    [["AE","AC","AD"],["E","C","D"],["BE","BC","BD"]].forEach(row => {
+      const line = row.map(s => `${s} ${devCells[s] || "—"}`).join("   ");
+      L.push("  " + line);
+    });
+  }
+  if(report.obs) L.push(`Obs.: ${report.obs}`);
+  const txt = "Medidas (estimativa fotográfica — triagem, confirmar no cover test):\n" + L.join("\n");
+  if(navigator.clipboard?.writeText){
+    navigator.clipboard.writeText(txt).then(
+      () => setStatus("Medidas copiadas."),
+      () => setStatus("Não consegui copiar automaticamente; copie do painel manualmente.", {warn:true}));
+  } else setStatus("Cópia automática indisponível neste navegador.", {warn:true});
+}
+$("mCopy").addEventListener("click", copyMeasures);
+$("mRecalc").addEventListener("click", () => {
+  if(computeReport()){ fillReportUI(); setStatus("Medidas recalculadas na foto em posição primária."); }
+  else setStatus("Sem foto em posição primária com olhos detectados para medir.", {warn:true});
+});
+
+/* ---------- Entradas globais ---------- */
+$("btnImport").addEventListener("click", () => $("fileInput").click());
+$("fileInput").addEventListener("change", e => {
+  handleFiles(e.target.files);
+  e.target.value = "";
+});
+$("btnExport").addEventListener("click", exportBoard);
+$("btnDraft").addEventListener("click", draftAssign);
+$("btnInvert").addEventListener("click", invertColumns);
+
+window.addEventListener("dragover", e => {
+  if([...e.dataTransfer.types].includes("Files")) e.preventDefault();
+});
+window.addEventListener("drop", e => {
+  if(e.dataTransfer.files && e.dataTransfer.files.length){
+    e.preventDefault();
+    handleFiles(e.dataTransfer.files);
+  }
+});
+
+renderAll();
+</script>
+</body>
+</html>
