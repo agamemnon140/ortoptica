@@ -1,0 +1,15 @@
+{
+  "name": "Prancha ortóptica — 9 posições do olhar",
+  "short_name": "Prancha Ortóptica",
+  "start_url": "prancha-ortoptica.html",
+  "display": "standalone",
+  "background_color": "#FBFAF6",
+  "theme_color": "#0E6B59",
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
