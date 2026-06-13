@@ -131,7 +131,8 @@
   </div>
   <div class="actions">
     <span id="detStatus" class="chip">Carregando detecção de olhos…</span>
-    <label class="toggle"><input type="checkbox" id="lblToggle"> Rótulos na exportação</label>
+    <label class="toggle"><input type="checkbox" id="repToggle"> Cabeçalho/relatório</label>
+    <label class="toggle"><input type="checkbox" id="lblToggle"> Rótulos nas fotos</label>
     <button id="btnImport" class="primary">Importar fotos</button>
     <button id="btnDraft">Rascunho automático</button>
     <button id="btnExport">Exportar prancha (PNG)</button>
@@ -234,7 +235,8 @@ const $ = id => document.getElementById(id);
 const thumbsEl=$("thumbs"), gridEl=$("grid"), statusEl=$("status"), detChip=$("detStatus"),
   dropHint=$("dropHint"), editor=$("editor"), editorEmpty=$("editorEmpty"),
   edTitle=$("edTitle"), edCanvas=$("edCanvas"), edZoom=$("edZoom"), edRot=$("edRot"),
-  edZoomV=$("edZoomV"), edRotV=$("edRotV"), boardEl=$("board"), lblToggle=$("lblToggle");
+  edZoomV=$("edZoomV"), edRotV=$("edRotV"), boardEl=$("board"),
+  lblToggle=$("lblToggle"), repToggle=$("repToggle");
 const edCtx = edCanvas.getContext("2d");
 
 let statusTimer = null;
@@ -679,6 +681,7 @@ function exportBoard(){
     return;
   }
   const withLbl = lblToggle.checked;
+  const withRep = repToggle.checked;
   const cw = 560, ch = 255, gap = 18, m = 48;
   const fw = 450, fh = 600;
   const lblH = withLbl ? 32 : 0;
@@ -695,7 +698,7 @@ function exportBoard(){
   ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
 
   drawSlotTo(ctx, "frontal", m, m, fw, fh);
-  if(withLbl){
+  if(withRep){
     ctx.fillStyle = "#22241F";
     ctx.font = "500 30px system-ui, sans-serif";
     ctx.textAlign = "left";
